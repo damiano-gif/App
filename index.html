@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Savings Tracker</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* App Bar */
+        .app-bar {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .app-title {
+            font-size: 20px;
+            font-weight: 600;
+            flex-grow: 1;
+        }
+        
+        /* Drawer */
+        .drawer {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: white;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .drawer.open {
+            left: 0;
+        }
+        
+        .drawer-header {
+            background-color: var(--primary);
+            padding: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        .drawer-header i {
+            margin-right: 10px;
+        }
+        
+        .drawer-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        .drawer-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .drawer-item:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .drawer-item i {
+            margin-right: 15px;
+            color: var(--gray);
+            width: 24px;
+            text-align: center;
+        }
+        
+        .drawer-item.active {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .drawer-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Screens */
+        .screen {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 70px);
+            padding: 40px 20px;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .app-logo {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .app-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--primary);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .login-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .login-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Dashboard Screen */
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .balance-title {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .balance-amount {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        
+        .balance-goal {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: white;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .action-button {
+            background-color: white;
+            color: var(--primary);
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .action-button i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .add-button {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .withdraw-button {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 20px 0 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        .transactions-list {
+            margin-bottom: 30px;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .transaction-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+        }
+        
+        .income-icon {
+            background-color: var(--success);
+        }
+        
+        .expense-icon {
+            background-color: var(--danger);
+        }
+        
+        .transaction-details h4 {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .transaction-details p {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        
+        .transaction-amount {
+            font-weight: 600;
+        }
+        
+        .income-amount {
+            color: var(--success);
+        }
+        
+        .expense-amount {
+            color: var(--danger);
+        }
+        
+        /* Reports Screen */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .month-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .month-nav {
+            display: flex;
+            align-items: center;
+        }
+        
+        .month-title {
+            font-weight: 500;
+            margin: 0 15px;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .nav-button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 20px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-title {
+            font-size: 13px;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .income-stat {
+            color: var(--success);
+        }
+        
+        .expense-stat {
+            color: var(--danger);
+        }
+        
+        /* Dialog */
+        .dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1001;
+            width: 90%;
+            max-width: 400px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .dialog.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .dialog-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .dialog-body {
+            margin-bottom: 25px;
+        }
+        
+        .dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .dialog-button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        
+        .cancel-button {
+            background-color: var(--light-gray);
+            color: var(--dark);
+            margin-right: 10px;
+        }
+        
+        .confirm-button {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .confirm-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Responsive */
+        @media (min-width: 768px) {
+            .app-container {
+                max-width: 450px;
+                margin: 20px auto;
+                min-height: 90vh;
+                border-radius: 16px;
+                overflow: hidden;
+            }
+            
+            .balance-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- App Bar -->
+        <div class="app-bar">
+            <button class="menu-button" id="menuButton">
+                <i class="material-icons">menu</i>
+            </button>
+            <div class="app-title" id="appTitle">Savings Tracker</div>
+        </div>
+        
+        <!-- Drawer -->
+        <div class="drawer" id="drawer">
+            <div class="drawer-header">
+                <i class="material-icons">account_balance_wallet</i>
+                <span>Menu</span>
+            </div>
+            <div class="drawer-content">
+                <div class="drawer-item active" id="dashboardItem">
+                    <i class="material-icons">home</i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="drawer-item" id="reportsItem">
+                    <i class="material-icons">bar_chart</i>
+                    <span>Report Mensili</span>
+                </div>
+                <div class="drawer-item" id="setGoalItem">
+                    <i class="material-icons">flag</i>
+                    <span>Imposta Obiettivo</span>
+                </div>
+                <div class="drawer-item" id="transactionsItem">
+                    <i class="material-icons">list_alt</i>
+                    <span>Lista Movimenti</span>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="dialog-button cancel-button" id="logoutButton">Esci</button>
+            </div>
+        </div>
+        
+        <!-- Overlay -->
+        <div class="overlay" id="overlay"></div>
+        
+       
+        
+        <!-- Dashboard Screen -->
+        <div class="screen" id="dashboardScreen">
+            <div class="balance-card">
+                <div class="balance-title">Saldo Attuale</div>
+                <div class="balance-amount" id="balanceAmount">€0.00</div>
+                <div class="balance-goal">
+                    <div>
+                        <div>Obiettivo: <span id="goalAmountText">€7,500.00</span></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    <div id="remainingAmount">€7,500.00</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-button add-button" id="addMoneyButton">
+                    <i class="material-icons">add</i>
+                    Deposita
+                </button>
+                <button class="action-button withdraw-button" id="withdrawMoneyButton">
+                    <i class="material-icons">remove</i>
+                    Preleva
+                </button>
+            </div>
+            
+            <div class="section-title">
+                <i class="material-icons">history</i>
+                <span>Ultime Transazioni</span>
+            </div>
+            
+            <div class="transactions-list" id="recentTransactions">
+                <!-- Transactions will be added here dynamically -->
+            </div>
+        </div>
+        
+        <!-- Reports Screen -->
+        <div class="screen" id="reportsScreen">
+            <div class="chart-container">
+                <div class="month-selector">
+                    <div class="month-nav">
+                        <button class="nav-button" id="prevMonthButton">
+                            <i class="material-icons">chevron_left</i>
+                        </button>
+                        <div class="month-title" id="currentMonth">Gennaio 2023</div>
+                        <button class="nav-button" id="nextMonthButton">
+                            <i class="material-icons">chevron_right</i>
+                        </button>
+                    </div>
+                </div>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Totale Entrate</div>
+                    <div class="stat-value income-stat" id="monthlyIncome">€0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Totale Uscite</div>
+                    <div class="stat-value expense-stat" id="monthlyExpense">€0.00</div>
+                </div>
+            </div>
+            
+            <div class="section-title">
+                <i class="material-icons">list</i>
+                <span>Dettaglio Mensile</span>
+            </div>
+            
+            <div class="transactions-list" id="monthlyTransactions">
+                <!-- Monthly transactions will be added here dynamically -->
+            </div>
+        </div>
+        
+        <!-- Transactions Screen -->
+        <div class="screen" id="transactionsScreen">
+            <div class="section-title">
+                <i class="material-icons">list_alt</i>
+                <span>Tutte le Transazioni</span>
+            </div>
+            
+            <div class="transactions-list" id="allTransactions">
+                <!-- All transactions will be added here dynamically -->
+            </div>
+        </div>
+        
+        <!-- Dialogs -->
+        <!-- Transaction Dialog -->
+        <div class="dialog" id="transactionDialog">
+            <div class="dialog-header">
+                <div class="dialog-title" id="transactionDialogTitle">Deposita Denaro</div>
+                <button class="close-button" id="closeTransactionDialog">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="dialog-body">
+                <div class="input-group">
+                    <label class="input-label">Importo</label>
+                    <input type="number" class="input-field" id="transactionAmount" placeholder="€0.00">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Descrizione (opzionale)</label>
+                    <input type="text" class="input-field" id="transactionDescription" placeholder="Descrizione">
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="dialog-button cancel-button" id="cancelTransactionButton">Annulla</button>
+                <button class="dialog-button confirm-button" id="confirmTransactionButton">Conferma</button>
+            </div>
+        </div>
+        
+        <!-- Goal Dialog -->
+        <div class="dialog" id="goalDialog">
+            <div class="dialog-header">
+                <div class="dialog-title">Imposta Obiettivo</div>
+                <button class="close-button" id="closeGoalDialog">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="dialog-body">
+                <div class="input-group">
+                    <label class="input-label">Nuovo Obiettivo</label>
+                    <input type="number" class="input-field" id="goalAmountInput" placeholder="€0.00">
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="dialog-button cancel-button" id="cancelGoalButton">Annulla</button>
+                <button class="dialog-button confirm-button" id="confirmGoalButton">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stato dell'applicazione
+        const state = {
+            currentSavings: 0,
+            goalAmount: 7500,
+            transactions: [],
+            currentScreen: 'login',
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear()
+        };
+
+        // Elementi del DOM
+        const elements = {
+            // App structure
+            menuButton: document.getElementById('menuButton'),
+            drawer: document.getElementById('drawer'),
+            overlay: document.getElementById('overlay'),
+            appTitle: document.getElementById('appTitle'),
+            
+            // Login screen
+            loginScreen: document.getElementById('loginScreen'),
+            passwordInput: document.getElementById('passwordInput'),
+            loginButton: document.getElementById('loginButton'),
+            
+            // Dashboard screen
+            dashboardScreen: document.getElementById('dashboardScreen'),
+            balanceAmount: document.getElementById('balanceAmount'),
+            goalAmountText: document.getElementById('goalAmountText'),
+            remainingAmount: document.getElementById('remainingAmount'),
+            progressFill: document.getElementById('progressFill'),
+            addMoneyButton: document.getElementById('addMoneyButton'),
+            withdrawMoneyButton: document.getElementById('withdrawMoneyButton'),
+            recentTransactions: document.getElementById('recentTransactions'),
+            
+            // Reports screen
+            reportsScreen: document.getElementById('reportsScreen'),
+            prevMonthButton: document.getElementById('prevMonthButton'),
+            nextMonthButton: document.getElementById('nextMonthButton'),
+            currentMonth: document.getElementById('currentMonth'),
+            monthlyChart: document.getElementById('monthlyChart'),
+            monthlyIncome: document.getElementById('monthlyIncome'),
+            monthlyExpense: document.getElementById('monthlyExpense'),
+            monthlyTransactions: document.getElementById('monthlyTransactions'),
+            
+            // Transactions screen
+            transactionsScreen: document.getElementById('transactionsScreen'),
+            allTransactions: document.getElementById('allTransactions'),
+            
+            // Menu items
+            dashboardItem: document.getElementById('dashboardItem'),
+            reportsItem: document.getElementById('reportsItem'),
+            setGoalItem: document.getElementById('setGoalItem'),
+            transactionsItem: document.getElementById('transactionsItem'),
+            logoutButton: document.getElementById('logoutButton'),
+            
+            // Dialogs
+            transactionDialog: document.getElementById('transactionDialog'),
+            transactionDialogTitle: document.getElementById('transactionDialogTitle'),
+            transactionAmount: document.getElementById('transactionAmount'),
+            transactionDescription: document.getElementById('transactionDescription'),
+            closeTransactionDialog: document.getElementById('closeTransactionDialog'),
+            cancelTransactionButton: document.getElementById('cancelTransactionButton'),
+            confirmTransactionButton: document.getElementById('confirmTransactionButton'),
+            
+            goalDialog: document.getElementById('goalDialog'),
+            goalAmountInput: document.getElementById('goalAmountInput'),
+            closeGoalDialog: document.getElementById('closeGoalDialog'),
+            cancelGoalButton: document.getElementById('cancelGoalButton'),
+            confirmGoalButton: document.getElementById('confirmGoalButton')
+        };
+
+        // Chart instance
+        let monthlyChart = null;
+
+        // Nomi dei mesi
+        const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+                            "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+
+        // Carica i dati salvati
+        function loadData() {
+            const savedData = localStorage.getItem('advancedSavingsAppData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                state.password = data.password || null;
+                state.currentSavings = data.currentSavings || 0;
+                state.goalAmount = data.goalAmount || 7500;
+                state.transactions = data.transactions || [];
+            }
+            
+            // Se non c'è password impostata, mostra la schermata di login
+            showScreen('dashboard');
+
+            
+            updateUI();
+        }
+
+        // Salva i dati
+        function saveData() {
+            localStorage.setItem('advancedSavingsAppData', JSON.stringify(state));
+        }
+
+        // Mostra una schermata specifica
+        function showScreen(screenName) {
+            // Nascondi tutte le schermate
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Aggiorna lo stato corrente
+            state.currentScreen = screenName;
+            
+            // Mostra la schermata richiesta
+            switch (screenName) {
+                case 'login':
+                    elements.loginScreen.classList.add('active');
+                    elements.appTitle.textContent = 'Savings Tracker';
+                    break;
+                    
+                case 'dashboard':
+                    elements.dashboardScreen.classList.add('active');
+                    elements.appTitle.textContent = 'Dashboard';
+                    updateDashboard();
+                    break;
+                    
+                case 'reports':
+                    elements.reportsScreen.classList.add('active');
+                    elements.appTitle.textContent = 'Report Mensili';
+                    updateReports();
+                    break;
+                    
+                case 'transactions':
+                    elements.transactionsScreen.classList.add('active');
+                    elements.appTitle.textContent = 'Tutte le Transazioni';
+                    updateAllTransactions();
+                    break;
+            }
+            
+            // Aggiorna lo stato attivo nel menu
+            updateActiveMenuItem();
+        }
+
+        // Aggiorna lo stato attivo nel menu
+        function updateActiveMenuItem() {
+            document.querySelectorAll('.drawer-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            switch (state.currentScreen) {
+                case 'dashboard':
+                    elements.dashboardItem.classList.add('active');
+                    break;
+                    
+                case 'reports':
+                    elements.reportsItem.classList.add('active');
+                    break;
+                    
+                case 'transactions':
+                    elements.transactionsItem.classList.add('active');
+                    break;
+            }
+        }
+
+        // Aggiorna l'interfaccia utente
+        function updateUI() {
+            // Aggiorna il saldo e l'obiettivo
+            elements.balanceAmount.textContent = `€${state.currentSavings.toFixed(2)}`;
+            elements.goalAmountText.textContent = `€${state.goalAmount.toFixed(2)}`;
+            
+            // Calcola e mostra quanto manca all'obiettivo
+            const remaining = Math.max(state.goalAmount - state.currentSavings, 0);
+            elements.remainingAmount.textContent = `€${remaining.toFixed(2)}`;
+            
+            // Aggiorna la barra di progresso
+            const progressPercent = Math.min((state.currentSavings / state.goalAmount) * 100, 100);
+            elements.progressFill.style.width = `${progressPercent}%`;
+            
+            // Aggiorna le transazioni recenti
+            updateRecentTransactions();
+        }
+
+        // Aggiorna le transazioni recenti
+        function updateRecentTransactions() {
+            elements.recentTransactions.innerHTML = '';
+            
+            // Ordina le transazioni per data (più recenti prima)
+            const sortedTransactions = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Mostra solo le ultime 5 transazioni
+            const recentTransactions = sortedTransactions.slice(0, 5);
+            
+            if (recentTransactions.length === 0) {
+                elements.recentTransactions.innerHTML = '<p style="text-align: center; color: var(--gray);">Nessuna transazione recente</p>';
+                return;
+            }
+            
+            recentTransactions.forEach(transaction => {
+                const transactionElement = document.createElement('div');
+                transactionElement.className = 'transaction-item';
+                
+                const isIncome = transaction.type === 'deposit';
+                
+                transactionElement.innerHTML = `
+                    <div class="transaction-info">
+                        <div class="transaction-icon ${isIncome ? 'income-icon' : 'expense-icon'}">
+                            <i class="material-icons">${isIncome ? 'arrow_downward' : 'arrow_upward'}</i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${transaction.description || (isIncome ? 'Deposito' : 'Prelievo')}</h4>
+                            <p>${formatDate(transaction.date)}</p>
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${isIncome ? 'income-amount' : 'expense-amount'}">
+                        ${isIncome ? '+' : '-'}€${transaction.amount.toFixed(2)}
+                    </div>
+                `;
+                
+                elements.recentTransactions.appendChild(transactionElement);
+            });
+        }
+
+        // Aggiorna i report mensili
+        function updateReports() {
+            // Aggiorna il titolo del mese
+            elements.currentMonth.textContent = `${monthNames[state.currentMonth]} ${state.currentYear}`;
+            
+            // Filtra le transazioni per il mese corrente
+            const monthlyTransactions = state.transactions.filter(transaction => {
+                const date = new Date(transaction.date);
+                return date.getMonth() === state.currentMonth && date.getFullYear() === state.currentYear;
+            });
+            
+            // Calcola totale entrate e uscite
+            let totalIncome = 0;
+            let totalExpense = 0;
+            
+            monthlyTransactions.forEach(transaction => {
+                if (transaction.type === 'deposit') {
+                    totalIncome += transaction.amount;
+                } else {
+                    totalExpense += transaction.amount;
+                }
+            });
+            
+            // Aggiorna i totali
+            elements.monthlyIncome.textContent = `€${totalIncome.toFixed(2)}`;
+            elements.monthlyExpense.textContent = `€${totalExpense.toFixed(2)}`;
+            
+            // Aggiorna il grafico
+            updateChart(totalIncome, totalExpense);
+            
+            // Aggiorna la lista delle transazioni mensili
+            updateMonthlyTransactionsList(monthlyTransactions);
+        }
+
+        // Aggiorna il grafico
+        function updateChart(income, expense) {
+            const ctx = elements.monthlyChart.getContext('2d');
+            
+            // Se esiste già un grafico, distruggilo
+            if (monthlyChart) {
+                monthlyChart.destroy();
+            }
+            
+            monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Entrate', 'Uscite'],
+                    datasets: [{
+                        data: [income, expense],
+                        backgroundColor: [
+                            '#4cc9f0',
+                            '#f72585'
+                        ],
+                        borderColor: [
+                            '#3aa8d8',
+                            '#e5177e'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Aggiorna la lista delle transazioni mensili
+        function updateMonthlyTransactionsList(transactions) {
+            elements.monthlyTransactions.innerHTML = '';
+            
+            if (transactions.length === 0) {
+                elements.monthlyTransactions.innerHTML = '<p style="text-align: center; color: var(--gray);">Nessuna transazione questo mese</p>';
+                return;
+            }
+            
+            // Ordina per data (più recenti prima)
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedTransactions.forEach(transaction => {
+                const transactionElement = document.createElement('div');
+                transactionElement.className = 'transaction-item';
+                
+                const isIncome = transaction.type === 'deposit';
+                
+                transactionElement.innerHTML = `
+                    <div class="transaction-info">
+                        <div class="transaction-icon ${isIncome ? 'income-icon' : 'expense-icon'}">
+                            <i class="material-icons">${isIncome ? 'arrow_downward' : 'arrow_upward'}</i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${transaction.description || (isIncome ? 'Deposito' : 'Prelievo')}</h4>
+                            <p>${formatDate(transaction.date)}</p>
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${isIncome ? 'income-amount' : 'expense-amount'}">
+                        ${isIncome ? '+' : '-'}€${transaction.amount.toFixed(2)}
+                    </div>
+                `;
+                
+                elements.monthlyTransactions.appendChild(transactionElement);
+            });
+        }
+
+        // Aggiorna tutte le transazioni
+        function updateAllTransactions() {
+            elements.allTransactions.innerHTML = '';
+            
+            if (state.transactions.length === 0) {
+                elements.allTransactions.innerHTML = '<p style="text-align: center; color: var(--gray);">Nessuna transazione registrata</p>';
+                return;
+            }
+            
+            // Ordina per data (più recenti prima)
+            const sortedTransactions = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            let currentMonthYear = null;
+            
+            sortedTransactions.forEach(transaction => {
+                const date = new Date(transaction.date);
+                const monthYear = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+                
+                // Aggiungi intestazione del mese se cambia
+                if (monthYear !== currentMonthYear) {
+                    currentMonthYear = monthYear;
+                    const monthHeader = document.createElement('div');
+                    monthHeader.style.padding = '10px 0';
+                    monthHeader.style.fontWeight = '500';
+                    monthHeader.style.color = 'var(--primary)';
+                    monthHeader.style.borderBottom = '1px solid var(--light-gray)';
+                    monthHeader.textContent = monthYear;
+                    elements.allTransactions.appendChild(monthHeader);
+                }
+
+                const isIncome = transaction.type === 'deposit';
+
+                const transactionElement = document.createElement('div');
+                transactionElement.className = 'transaction-item';
+
+                transactionElement.innerHTML = `
+                    <div class="transaction-info">
+                        <div class="transaction-icon ${isIncome ? 'income-icon' : 'expense-icon'}">
+                            <i class="material-icons">${isIncome ? 'arrow_downward' : 'arrow_upward'}</i>
+                        </div>
+                        <div class="transaction-details">
+                            <h4>${transaction.description || (isIncome ? 'Deposito' : 'Prelievo')}</h4>
+                            <p>${formatDate(transaction.date)}</p>
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${isIncome ? 'income-amount' : 'expense-amount'}">
+                        ${isIncome ? '+' : '-'}€${transaction.amount.toFixed(2)}
+                    </div>
+                `;
+
+                elements.allTransactions.appendChild(transactionElement);
+            });
+        }
+
+        // Formatta la data in modo leggibile
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Inizializza l'app al caricamento
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+
+        // Event Listeners
+        elements.menuButton.addEventListener('click', () => {
+            elements.drawer.classList.add('open');
+            elements.overlay.classList.add('show');
+        });
+
+        elements.overlay.addEventListener('click', () => {
+            elements.drawer.classList.remove('open');
+            elements.overlay.classList.remove('show');
+        });
+
+        
+
+        elements.logoutButton.addEventListener('click', () => {
+            state.password = null;
+            saveData();
+            showScreen('login');
+        });
+
+        elements.dashboardItem.addEventListener('click', () => showScreen('dashboard'));
+        elements.reportsItem.addEventListener('click', () => showScreen('reports'));
+        elements.transactionsItem.addEventListener('click', () => showScreen('transactions'));
+
+        elements.addMoneyButton.addEventListener('click', () => {
+            elements.transactionDialogTitle.textContent = 'Deposita Denaro';
+            elements.transactionDialog.dataset.type = 'deposit';
+            elements.transactionAmount.value = '';
+            elements.transactionDescription.value = '';
+            elements.transactionDialog.classList.add('show');
+        });
+
+        elements.withdrawMoneyButton.addEventListener('click', () => {
+            elements.transactionDialogTitle.textContent = 'Preleva Denaro';
+            elements.transactionDialog.dataset.type = 'withdraw';
+            elements.transactionAmount.value = '';
+            elements.transactionDescription.value = '';
+            elements.transactionDialog.classList.add('show');
+        });
+
+        elements.closeTransactionDialog.addEventListener('click', () => {
+            elements.transactionDialog.classList.remove('show');
+        });
+
+        elements.cancelTransactionButton.addEventListener('click', () => {
+            elements.transactionDialog.classList.remove('show');
+        });
+
+        elements.confirmTransactionButton.addEventListener('click', () => {
+            const amount = parseFloat(elements.transactionAmount.value);
+            if (isNaN(amount) || amount <= 0) return;
+
+            const type = elements.transactionDialog.dataset.type;
+            const description = elements.transactionDescription.value.trim();
+
+            if (type === 'deposit') {
+                state.currentSavings += amount;
+            } else if (type === 'withdraw') {
+                state.currentSavings = Math.max(0, state.currentSavings - amount);
+            }
+
+            state.transactions.push({
+                type,
+                amount,
+                description,
+                date: new Date().toISOString()
+            });
+
+            saveData();
+            updateUI();
+            elements.transactionDialog.classList.remove('show');
+        });
+
+        elements.setGoalItem.addEventListener('click', () => {
+            elements.goalAmountInput.value = state.goalAmount;
+            elements.goalDialog.classList.add('show');
+        });
+
+        elements.closeGoalDialog.addEventListener('click', () => {
+            elements.goalDialog.classList.remove('show');
+        });
+
+        elements.cancelGoalButton.addEventListener('click', () => {
+            elements.goalDialog.classList.remove('show');
+        });
+
+        elements.confirmGoalButton.addEventListener('click', () => {
+            const newGoal = parseFloat(elements.goalAmountInput.value);
+            if (!isNaN(newGoal) && newGoal > 0) {
+                state.goalAmount = newGoal;
+                saveData();
+                updateUI();
+                elements.goalDialog.classList.remove('show');
+            }
+        });
+
+        elements.prevMonthButton.addEventListener('click', () => {
+            if (state.currentMonth === 0) {
+                state.currentMonth = 11;
+                state.currentYear -= 1;
+            } else {
+                state.currentMonth -= 1;
+            }
+            updateReports();
+        });
+
+        elements.nextMonthButton.addEventListener('click', () => {
+            if (state.currentMonth === 11) {
+                state.currentMonth = 0;
+                state.currentYear += 1;
+            } else {
+                state.currentMonth += 1;
+            }
+            updateReports();
+        });
+    </script>
+</body>
+</html>
